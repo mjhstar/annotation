@@ -2,10 +2,7 @@ package com.annotation.project.controller;
 
 import com.annotation.project.service.TestService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,7 +16,7 @@ public class TestController {
       testService.create(name);
     }
 
-    @GetMapping("/test")
+    @PutMapping("/test")
     public void aa(
             @RequestParam long id,
             @RequestParam String modifyName

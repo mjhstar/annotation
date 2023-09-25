@@ -40,6 +40,6 @@ public class TestService {
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
-        nameRepository.save(person);
+//        nameRepository.save(person);
     }
 }
