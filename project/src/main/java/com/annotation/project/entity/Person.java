@@ -1,7 +1,7 @@
 package com.annotation.project.entity;
 
 import com.annotation.core.annotation.CheckEntity;
-import com.annotation.project.dto.NameDto;
+import com.annotation.project.dto.PersonDto;
 import com.annotation.project.entity.common.CommonEntity;
 import lombok.NoArgsConstructor;
 
@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @NoArgsConstructor
-@CheckEntity(entity = Person.class, dto = NameDto.class, excludeFields = {})
-public class Person extends CommonEntity<Person, NameDto> {
+@CheckEntity(entity = Person.class, dto = PersonDto.class, excludeFields = {})
+public class Person extends CommonEntity<Person, PersonDto> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,12 +32,12 @@ public class Person extends CommonEntity<Person, NameDto> {
     }
 
     @Override
-    public void update(NameDto dto) {
+    public void update(PersonDto dto) {
         this.updateEntity(this, dto, this.getIdName());
     }
 
     @Override
-    public NameDto getDto(NameDto dto) {
+    public PersonDto getDto(PersonDto dto) {
         return this.makeDto(this, dto);
     }
 }

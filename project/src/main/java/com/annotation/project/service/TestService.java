@@ -1,6 +1,6 @@
 package com.annotation.project.service;
 
-import com.annotation.project.dto.NameDto;
+import com.annotation.project.dto.PersonDto;
 import com.annotation.project.entity.Person;
 import com.annotation.project.entity.PersonInfo;
 import com.annotation.project.repository.NameRepository;
@@ -29,7 +29,7 @@ public class TestService {
             return;
         }
         Person person = nameOptional.get();
-        NameDto dto = person.getDto(new NameDto());
+        PersonDto dto = person.getDto(new PersonDto());
 
         //비즈니스
         dto.setName(modifyName);

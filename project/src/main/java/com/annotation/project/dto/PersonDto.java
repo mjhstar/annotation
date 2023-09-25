@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public class NameDto {
+public class PersonDto {
     private Long id;
     private String name;
     private LocalDateTime createdAt;
