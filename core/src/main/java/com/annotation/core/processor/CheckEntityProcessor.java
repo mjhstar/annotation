@@ -47,11 +47,13 @@ public class CheckEntityProcessor extends AbstractProcessor {
                 String[] excludeFields = annotation.excludeFields();
                 TypeElement entityClass = elementUtil.getTypeElement(entityClassName);
                 TypeElement dtoClass = elementUtil.getTypeElement(dtoClassName);
+                List<String> embeddedFields = getEmbeddedFields(entityClass);
                 checkExcludeFields(excludeFields, entityClass, element);
-                if (excludeFields.length > 0)
-                    processExclude(entityClass, dtoClass, excludeFields, element);
+                if (excludeFields.length > 0) {
+                    processExclude(entityClass, dtoClass, excludeFields, element, embeddedFields);
+                }
                 else
-                    processAllFields(entityClass, dtoClass, element);
+                    processAllFields(entityClass, dtoClass, element, embeddedFields);
             } catch (Exception e) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage());
             }
@@ -59,29 +61,29 @@ public class CheckEntityProcessor extends AbstractProcessor {
         return true;
     }
 
-    private void processExclude(TypeElement entity, TypeElement dto, String[] excludeFields, Element element) {
-        List<FieldData> entityFields = getFields(entity);
-        List<FieldData> dtoFields = getFields(dto);
+    private void processExclude(TypeElement entity, TypeElement dto, String[] excludeFields, Element element, List<String> embeddedFields) {
+        List<FieldData> entityFields = getFields(entity, true);
+        List<FieldData> dtoFields = getFields(dto, true);
         List<String> excludeFieldList = Arrays.asList(excludeFields);
+        List<String> checkEmbeddedFields = embeddedFields.stream().filter(it -> !excludeFieldList.contains(it))
+                .collect(Collectors.toList());
         List<FieldData> checkFields = entityFields.stream().filter(en -> !excludeFieldList.contains(en.getName()))
                 .collect(Collectors.toList());
-        Set<String> checkFieldSet = getFieldSet(checkFields);
-        Set<String> dtoFieldSet = getFieldSet(dtoFields);
-        checkNameAndType(entity, dto, checkFieldSet, dtoFieldSet, element);
-        checkSize(entity, dto, checkFieldSet, dtoFieldSet, element);
+        checkEmbeddedFields(checkEmbeddedFields, dtoFields, element);
+        checkNameAndType(entity, dto, checkFields, dtoFields, element);
+        checkSize(entity, dto, checkFields, dtoFields, element);
     }
 
-    private void processAllFields(TypeElement entity, TypeElement dto, Element element) {
-        List<FieldData> entityFields = getFields(entity);
-        List<FieldData> dtoFields = getFields(dto);
-        Set<String> entityFieldSet = getFieldSet(entityFields);
-        Set<String> dtoFieldSet = getFieldSet(dtoFields);
-        checkNameAndType(entity, dto, entityFieldSet, dtoFieldSet, element);
-        checkSize(entity, dto, entityFieldSet, dtoFieldSet, element);
+    private void processAllFields(TypeElement entity, TypeElement dto, Element element, List<String> embeddedFields) {
+        List<FieldData> entityFields = getFields(entity, true);
+        List<FieldData> dtoFields = getFields(dto, true);
+        checkEmbeddedFields(embeddedFields, dtoFields, element);
+        checkNameAndType(entity, dto, entityFields, dtoFields, element);
+        checkSize(entity, dto, entityFields, dtoFields, element);
     }
 
     private void checkExcludeFields(String[] excludeFields, TypeElement entityClass, Element element) {
-        List<FieldData> entityFields = getFields(entityClass);
+        List<FieldData> entityFields = getFields(entityClass, false);
         List<String> fieldNames = entityFields.stream().map(FieldData::getName).collect(Collectors.toList());
         for (String excludeField : excludeFields) {
             if (!fieldNames.contains(excludeField)) {
@@ -94,13 +96,24 @@ public class CheckEntityProcessor extends AbstractProcessor {
         }
     }
 
-    private List<FieldData> getFields(TypeElement typeElement) {
+    private void checkEmbeddedFields(List<String> embeddedFields, List<FieldData> dtoFields, Element element) {
+        for (String field : embeddedFields) {
+            if (!dtoFields.stream().map(FieldData::getName).collect(Collectors.toList()).contains(field)) {
+                System.out.println(field + dtoFields.stream().map(FieldData::getName).collect(Collectors.toList()));
+                printMessage(Diagnostic.Kind.ERROR, element,
+                        "Not Exist Field in Dto ::: " + field
+                );
+            }
+        }
+
+    }
+
+    private List<FieldData> getFields(TypeElement typeElement, boolean removeEmbedded) {
         List<FieldData> fields = new ArrayList<>();
         for (Element el : typeElement.getEnclosedElements()) {
             if (el instanceof VariableElement) {
                 VariableElement variableElement = (VariableElement) el;
-                if (variableElement.getAnnotation(Embedded.class) != null) {
-                    System.out.println(variableElement.getSimpleName().toString() + " ::: " + variableElement.asType().toString());
+                if (removeEmbedded && variableElement.getAnnotation(Embedded.class) != null) {
                     continue;
                 }
                 String name = variableElement.getSimpleName().toString();
@@ -111,13 +124,17 @@ public class CheckEntityProcessor extends AbstractProcessor {
         return fields;
     }
 
-    private Set<String> getFieldSet(List<FieldData> fields) {
-        Set<String> fieldSet = new HashSet<>();
-        for (FieldData field : fields) {
-            String fieldInfo = field.getName() + " : " + field.getType();
-            fieldSet.add(fieldInfo);
+    private List<String> getEmbeddedFields(TypeElement typeElement) {
+        List<String> embeddedFields = new ArrayList<>();
+        for (Element el : typeElement.getEnclosedElements()) {
+            if (el instanceof VariableElement) {
+                VariableElement variableElement = (VariableElement) el;
+                if (variableElement.getAnnotation(Embedded.class) != null) {
+                    embeddedFields.add(variableElement.getSimpleName().toString());
+                }
+            }
         }
-        return fieldSet;
+        return embeddedFields;
     }
 
     private String getClassName(String input, String key) {
@@ -132,20 +149,33 @@ public class CheckEntityProcessor extends AbstractProcessor {
         }
     }
 
-    private void checkSize(TypeElement entity, TypeElement dto, Set<String> entitySet, Set<String> dtoSet, Element element) {
-        if (entitySet.size() != dtoSet.size()) {
+    private void checkSize(TypeElement entity, TypeElement dto, List<FieldData> checkFields, List<FieldData> dtoFields, Element element) {
+        if (checkFields.size() != dtoFields.size()) {
             printMessage(Diagnostic.Kind.WARNING, element,
-                    "Entity Class : " + entity + "  /  Dto Class : " + dto + "   (Check your Entity, Dto Field) ::: " + "entity : {" + entitySet + "} - dto : {" + dtoSet + "}");
+                    "Entity Class : " + entity + "  /  Dto Class : " + dto + "   (Check your Entity, Dto Field) ::: " + "entity : {" + checkFields + "} - dto : {" + dtoFields + "}");
         }
     }
 
-    private void checkNameAndType(TypeElement entity, TypeElement dto, Set<String> entitySet, Set<String> dtoSet, Element element) {
-        for (String entityField : entitySet) {
-            if (!dtoSet.contains(entityField)) {
-                printMessage(
-                        Diagnostic.Kind.ERROR, element,
-                        "Entity Class : " + entity + "  /  Dto Class : " + dto + "   (Not Exist Field in Dto) : {" + entityField + "}");
+    private void checkNameAndType(TypeElement entity, TypeElement dto, List<FieldData> checkFields, List<FieldData> dtoFields, Element element) {
+        for (FieldData entityField : checkFields) {
+            boolean isCheck = false;
+
+            for (FieldData dtoField : dtoFields) {
+                if (entityField.getName().equals(dtoField.getName()) && entityField.getType().equals(dtoField.getType())) {
+                    isCheck = true;
+                }
+                if (isCheck) break;
             }
+            if (!isCheck) {
+                printMessage(Diagnostic.Kind.ERROR, element,
+                        "Entity Class : " + entity + "  /  Dto Class : " + dto + "   (Not Exist Field in Dto) : {" + entityField + "}"
+                );
+            }
+//            if (!dtoFields.contains(entityField)) {
+//                printMessage(
+//                        Diagnostic.Kind.ERROR, element,
+//                        "Entity Class : " + entity + "  /  Dto Class : " + dto + "   (Not Exist Field in Dto) : {" + entityField + "}");
+//            }
         }
     }
 

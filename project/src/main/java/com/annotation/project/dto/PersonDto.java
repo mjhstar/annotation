@@ -12,5 +12,5 @@ public class PersonDto {
     private Long id;
     private String name;
     private LocalDateTime createdAt;
-    private PersonInfoDto aData;
+    private PersonInfoDto personInfo;
 }
