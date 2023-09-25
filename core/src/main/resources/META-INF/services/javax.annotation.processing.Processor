@@ -1,1 +1,1 @@
-com.rs.core.annotation.entity.CheckEntityProcessor
+com.annotation.core.processor.CheckEntityProcessor

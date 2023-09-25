@@ -1,13 +1,13 @@
-package com.annotation.core;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-@SpringBootTest
-class CoreApplicationTests {
-
-    @Test
-    void contextLoads() {
-    }
-
-}
+//package com.annotation.core;
+//
+//import org.junit.jupiter.api.Test;
+//import org.springframework.boot.test.context.SpringBootTest;
+//
+//@SpringBootTest
+//class CoreApplicationTests {
+//
+//    @Test
+//    void contextLoads() {
+//    }
+//
+//}

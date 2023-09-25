@@ -37,12 +37,13 @@ public class CheckEntityProcessor extends AbstractProcessor {
             CheckEntity annotation = typeElement.getAnnotation(CheckEntity.class);
             String className = typeElement.getQualifiedName().toString();
             String entityClassName = getClassName(annotation.toString(), "entity");
+            String dtoClassName = getClassName(annotation.toString(), "dto");
+
             if (!className.equals(entityClassName)) {
                 printMessage(Diagnostic.Kind.ERROR, element, "Not Match Target Entity - " + className + " ::: " + "Input Entity - " + entityClassName);
             }
 
             try {
-                String dtoClassName = getClassName(annotation.toString(), "dto");
                 String[] excludeFields = annotation.excludeFields();
                 TypeElement entityClass = elementUtil.getTypeElement(entityClassName);
                 TypeElement dtoClass = elementUtil.getTypeElement(dtoClassName);

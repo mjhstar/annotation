@@ -10,9 +10,4 @@ public class BookDto {
     private Long id;
     private String name;
     private LocalDateTime createdAt;
-
-    @Override
-    public String getIdName() {
-        return "id";
-    }
 }
