@@ -1,0 +1,43 @@
+package com.annotation.project.entity;
+
+import com.annotation.core.annotation.CheckEntity;
+import com.annotation.project.dto.NameDto;
+import com.annotation.project.entity.common.CommonEntity;
+import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@NoArgsConstructor
+@CheckEntity(entity = Person.class, dto = NameDto.class, excludeFields = {})
+public class Person extends CommonEntity<Person, NameDto> {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    private LocalDateTime createdAt;
+    @Embedded
+    private PersonInfo personInfo;
+
+    public Person(String name, LocalDateTime createdAt, PersonInfo personInfo){
+        this.name = name;
+        this.createdAt = createdAt;
+        this.personInfo = personInfo;
+    }
+
+    @Override
+    public String getIdName() {
+        return "id";
+    }
+
+    @Override
+    public void update(NameDto dto) {
+        this.updateEntity(this, dto, this.getIdName());
+    }
+
+    @Override
+    public NameDto getDto(NameDto dto) {
+        return this.makeDto(this, dto);
+    }
+}
