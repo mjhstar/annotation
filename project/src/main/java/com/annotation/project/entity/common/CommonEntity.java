@@ -3,12 +3,12 @@ package com.annotation.project.entity.common;
 import javax.persistence.Embedded;
 import java.lang.reflect.Field;
 
-public abstract class CommonEntity<E, D> {
+public abstract class CommonEntity<E, D> extends EntitySupport<E> implements CommonObject {
     public abstract String getIdName();
 
     public abstract void update(D dto) throws Exception;
 
-    public abstract D getDto(D dto) throws IllegalAccessException;
+    public abstract D getDto(D dto) throws Exception;
 
     protected D makeDto(E entity, D dto) {
         try {
@@ -31,8 +31,6 @@ public abstract class CommonEntity<E, D> {
                         } else {
                             dtoField.set(dto, value);
                         }
-
-
                         break;
                     }
                 }
@@ -44,10 +42,11 @@ public abstract class CommonEntity<E, D> {
     }
 
     protected void updateEntity(E entity, D dto, String id) {
+        E prevEntity = this.cloneEntity(entity);
         try {
             Field[] entityFields = entity.getClass().getDeclaredFields();
             Field[] dtoFields = dto.getClass().getDeclaredFields();
-            if(id != null) {
+            if (id != null) {
                 Field entityIdField = findFieldByName(entityFields, id);
                 Field dtoIdField = findFieldByName(dtoFields, id);
 
@@ -55,7 +54,6 @@ public abstract class CommonEntity<E, D> {
                 dtoIdField.setAccessible(true);
 
                 if (!entityIdField.get(entity).equals(dtoIdField.get(dto))) {
-                    //TODO ID 가 다르기 때문에 예외 발생
                     throw new Exception();
                 }
             }
@@ -69,18 +67,18 @@ public abstract class CommonEntity<E, D> {
                         Object entityValue = entityField.get(entity);
                         Object dtoValue = dtoField.get(dto);
 
-                        if(entityField.isAnnotationPresent(Embedded.class)){
+                        if (entityField.isAnnotationPresent(Embedded.class)) {
                             updateEntity((E) entityValue, (D) dtoValue, null);
-                        }
-                        else if (!entityValue.equals(dtoValue)) {
+                        } else if (!entityValue.equals(dtoValue)) {
                             entityField.set(entity, dtoValue);
                         }
                         break;
                     }
                 }
             }
+            throw new Exception();
         } catch (Exception e) {
-            //TODO 에러메시지 출력
+            this.rollback(entity, prevEntity);
         }
     }
 
